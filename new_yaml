@@ -1,0 +1,142 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "llite-openldap-server-emptypod",
+    "namespace": "llite",
+    "resourceVersion": "97279450",
+    "labels": {
+      "app.kubernetes.io/instance": "llite-openldap-server",
+      "app.kubernetes.io/managed-by": "Tiller",
+      "app.kubernetes.io/name": "emptypod",
+      "helm.sh/chart": "emptypod-0.1.0"
+    },
+    "annotations": {
+      "deployment.kubernetes.io/revision": "15"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app.kubernetes.io/instance": "llite-openldap-server",
+        "app.kubernetes.io/name": "emptypod"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/instance": "llite-openldap-server",
+          "app.kubernetes.io/name": "emptypod"
+        }
+      },
+      "spec": {
+        "volumes": [
+          {
+            "name": "openldap-varlib",
+            "persistentVolumeClaim": {
+              "claimName": "openldap-pvc-varlib"
+            }
+          },
+          {
+            "name": "openldap-usr",
+            "persistentVolumeClaim": {
+              "claimName": "openldap-pvc-usr"
+            }
+          },
+          {
+            "name": "openldap-etc",
+            "persistentVolumeClaim": {
+              "claimName": "openldap-pvc-etc"
+            }
+          },
+          {
+            "name": "openldap-run",
+            "persistentVolumeClaim": {
+              "claimName": "openldap-pvc-run"
+            }
+          }
+        ],
+        "containers": [
+          {
+            "name": "emptypod",
+            "image": "nginx:stable",
+            "ports": [
+              {
+                "name": "http",
+                "containerPort": 80,
+                "protocol": "TCP"
+              }
+            ],
+            "resources": {
+              "limits": {
+                "cpu": "200m",
+                "memory": "512Mi"
+              },
+              "requests": {
+                "cpu": "100m"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "openldap-varlib",
+                "mountPath": "/var/lib"
+              },
+              {
+                "name": "openldap-usr",
+                "mountPath": "/usr"
+              },
+              {
+                "name": "openldap-etc",
+                "mountPath": "/etc"
+              },
+              {
+                "name": "openldap-run",
+                "mountPath": "/run"
+              }
+            ],
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/",
+                "port": "http",
+                "scheme": "HTTP"
+              },
+              "timeoutSeconds": 1,
+              "periodSeconds": 10,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/",
+                "port": "http",
+                "scheme": "HTTP"
+              },
+              "timeoutSeconds": 1,
+              "periodSeconds": 10,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "securityContext": {},
+        "schedulerName": "default-scheduler"
+      }
+    },
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxUnavailable": "25%",
+        "maxSurge": "25%"
+      }
+    },
+    "revisionHistoryLimit": 10,
+    "progressDeadlineSeconds": 600
+  }
+}

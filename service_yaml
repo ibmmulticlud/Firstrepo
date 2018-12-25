@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: openldap389
+spec:
+  selector:
+    app: llite-openldap-server-emptypod
+  ports:
+  - protocol: TCP
+    port: 389
+    targetPort: 389

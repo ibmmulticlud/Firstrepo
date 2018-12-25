@@ -1,0 +1,113 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ include "emptypod.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "emptypod.name" . }}
+    helm.sh/chart: {{ include "emptypod.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "emptypod.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "emptypod.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          lifecycle:
+              postStart:
+                exec:
+                  command:
+                     - '/bin/sh'
+                     - '-c'
+                     - >
+                       apt-get -q -y update;
+                       mkdir /var/newtwo;
+                       apt-get -y install ldap-utils;
+                       apt-get -y install nano;
+                       debconf-set-selections <<< 'slapd/root_password password raktim';
+                       debconf-set-selections <<< 'slapd/root_password_again password raktim';
+                       aptitude -y install slapd;
+                       cp -p /usr/share/slapd/slapd.conf /etc/ldap/;
+                       echo "include         /etc/ldap/schema/core.schema" > /etc/ldap/slapd.conf;
+                       echo "include         /etc/ldap/schema/cosine.schema" >> /etc/ldap/slapd.conf;
+                       echo "include         /etc/ldap/schema/nis.schema" >> /etc/ldap/slapd.conf;
+                       echo "include         /etc/ldap/schema/inetorgperson.schema" >> /etc/ldap/slapd.conf;
+                       echo -e "\npidfile         /var/run/slapd/slapd.pid" >> /etc/ldap/slapd.conf;
+                       echo "argsfile        /var/run/slapd/slapd.args" >> /etc/ldap/slapd.conf;
+                       echo -e "\nloglevel        -1" >> /etc/ldap/slapd.conf;
+                       echo -e "\nmodulepath     /usr/lib/ldap" >> /etc/ldap/slapd.conf;
+                       echo "moduleload          back_ldap.la" >> /etc/ldap/slapd.conf;
+                       echo -e "\nsizelimit       500" >> /etc/ldap/slapd.conf;
+                       echo -e "\nbackend                 ldap" >> /etc/ldap/slapd.conf;
+                       echo -e "\ndatabase        ldap" >> /etc/ldap/slapd.conf;
+                       echo -e "\nsuffix          \"o=ibm.com\"" >> /etc/ldap/slapd.conf;
+                       echo "uri             ldaps://bluepages.ibm.com" >> /etc/ldap/slapd.conf;
+                       echo "rootdn          \"o=ibm.com\"" >> /etc/ldap/slapd.conf;
+                       echo -e "\nlastmod         on" >> /etc/ldap/slapd.conf;
+                       echo -e "\nTLSCACertificateFile     /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/slapd.conf;
+                       apt-get -y install curl;
+                       echo "BASE                o=ibm.com" > /etc/ldap/ldap.conf;
+                       echo "TLS_CACERT          /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/ldap.conf;
+                       echo "TLS_REQCERT     never" >> /etc/ldap/ldap.conf;
+                       echo "rm -rf /etc/ldap/slapd.d/cn=*" > /etc/ldap/run.sh;
+                       echo "slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/" >> /etc/ldap/run.sh;
+                       echo "chown -R openldap:openldap /etc/ldap/slapd.d" >> /etc/ldap/run.sh;
+                       chmod +x /etc/ldap/run.sh
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          # volumeMounts:
+          #   - mountPath: /var/lib
+          #     name: openldap-varlib
+          #   - mountPath: /etc
+          #     name: openldap-etc
+          #   - mountPath: /usr
+          #     name: openldap-usr
+          #   - mountPath: /run
+          #     name: openldap-run          
+          resources:  
+{{ toYaml .Values.resources | indent 12 }}   
+      # volumes:
+      # - name: openldap-varlib
+      #   persistentVolumeClaim:
+      #     claimName: openldap-pvc-varlib 
+      # - name: openldap-etc
+      #   persistentVolumeClaim:
+      #     claimName: openldap-pvc-etc
+      # - name: openldap-usr
+      #   persistentVolumeClaim:
+      #     claimName: openldap-pvc-usr
+      # - name: openldap-run
+      #   persistentVolumeClaim:
+      #     claimName: openldap-pvc-run                 
+{{- with .Values.nodeSelector }}           
+      nodeSelector:      
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

@@ -1,0 +1,8 @@
+dn: cn=Raktim,o=ibm.com
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+cn: Raktim
+sn: Biswas
+userid: raktim@gmail.com
+mail: raktim@gmail.com

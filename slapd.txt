@@ -1,0 +1,49 @@
+include         /etc/ldap/schema/core.schema
+include         /etc/ldap/schema/cosine.schema
+include         /etc/ldap/schema/nis.schema
+include         /etc/ldap/schema/inetorgperson.schema
+include         /etc/ldap/schema/misc.schema
+include         /etc/ldap/schema/ppolicy.schema
+
+pidfile         /var/run/slapd/slapd.pid
+argsfile        /var/run/slapd/slapd.args
+
+loglevel        none
+
+modulepath      /usr/lib/ldap
+moduleload      back_ldap.la
+moduleload      back_meta.la
+moduleload      back_mdb.la
+moduleload      ppolicy.la
+
+sizelimit       500
+
+***********************
+#LDAP Proxy Definition
+***********************
+
+database        ldap
+suffix          "ou=bluepages,o=ibm.com"
+subordinate
+uri             ldaps://bluepages.ibm.com
+
+*************************
+#MDB Database Definition
+*************************
+
+database        mdb
+maxsize         1073741824
+suffix          "o=ibm.com"
+rootdn          "cn=Admin,o=ibm.com"
+rootpw          Llite123#
+
+directory       "/var/lib/ldap"
+
+index           cn,mail eq
+index           objectClass eq
+
+overlay ppolicy
+ppolicy_default "cn=passwordDefault,ou=Policies,o=ibm.com"
+
+
+TLSCACertificateFile     /etc/ssl/certs/ca-certificates.crt

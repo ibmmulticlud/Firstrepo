@@ -1,0 +1,9 @@
+dn: o=ibm.com
+objectclass: dcObject
+objectclass: organization
+o: Liberty Lite
+dc: llite
+
+dn: cn=Admin,o=ibm.com
+objectclass: organizationalRole
+cn: Administrator
