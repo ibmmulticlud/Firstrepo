@@ -45,7 +45,7 @@ Persistence:
   ## This volume persists generated configuration files, keys, and certs.
   ##
     Enabled: true
-    size: 1Gi
+    size: 6Gi
     ## If defined, volume.beta.kubernetes.io/storage-class: <storageClass>
     ## Default: volume.alpha.kubernetes.io/storage-class: default
     ##

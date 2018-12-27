@@ -32,6 +32,7 @@ spec:
                      - >
                        apt-get -q -y update;
                        apt-get -y install procps;
+                       apt-get -y install iputils-ping;
                        apt-get -y install nano;
                        export DEBIAN_FRONTEND=noninteractive;
                        debconf-set-selections <<< ‘slapd/root_password password raktim’;
@@ -42,23 +43,82 @@ spec:
                        echo "include         /etc/ldap/schema/cosine.schema" >> /etc/ldap/slapd.conf;
                        echo "include         /etc/ldap/schema/nis.schema" >> /etc/ldap/slapd.conf;
                        echo "include         /etc/ldap/schema/inetorgperson.schema" >> /etc/ldap/slapd.conf;
+                       echo "include         /etc/ldap/schema/misc.schema" >> /etc/ldap/slapd.conf;
+                       echo "include         /etc/ldap/schema/ppolicy.schema" >> /etc/ldap/slapd.conf;
                        echo -e "\npidfile         /var/run/slapd/slapd.pid" >> /etc/ldap/slapd.conf;
                        echo "argsfile        /var/run/slapd/slapd.args" >> /etc/ldap/slapd.conf;
-                       echo -e "\nloglevel        -1" >> /etc/ldap/slapd.conf;
-                       echo -e "\nmodulepath     /usr/lib/ldap" >> /etc/ldap/slapd.conf;
+                       echo -e "\nloglevel        none" >> /etc/ldap/slapd.conf;
+                       echo -e "\nmodulepath      /usr/lib/ldap" >> /etc/ldap/slapd.conf;
                        echo "moduleload      back_ldap.la" >> /etc/ldap/slapd.conf;
+                       echo "moduleload      back_meta.la" >> /etc/ldap/slapd.conf;
+                       echo "moduleload      back_mdb.la" >> /etc/ldap/slapd.conf;
+                       echo "moduleload      ppolicy.la" >> /etc/ldap/slapd.conf;
                        echo -e "\nsizelimit       500" >> /etc/ldap/slapd.conf;
-                       echo -e "\nbackend         ldap" >> /etc/ldap/slapd.conf;
+                       echo -e "\n#**********************" >> /etc/ldap/slapd.conf;
+                       echo "#LDAP Proxy Definition" >> /etc/ldap/slapd.conf; 
+                       echo "#**********************" >> /etc/ldap/slapd.conf;
                        echo -e "\ndatabase        ldap" >> /etc/ldap/slapd.conf;
-                       echo -e "\nsuffix          \"o=ibm.com\"" >> /etc/ldap/slapd.conf;
+                       echo "suffix          \"ou=bluepages,o=ibm.com\"" >> /etc/ldap/slapd.conf;
+                       echo "subordinate" >> /etc/ldap/slapd.conf;
                        echo "uri             ldaps://bluepages.ibm.com" >> /etc/ldap/slapd.conf;
-                       echo "rootdn          \"o=ibm.com\"" >> /etc/ldap/slapd.conf;
-                       echo -e "\nlastmod         on" >> /etc/ldap/slapd.conf;
+                       echo -e "\n#************************" >> /etc/ldap/slapd.conf;
+                       echo "#MDB Database Definition" >> /etc/ldap/slapd.conf; 
+                       echo "#************************" >> /etc/ldap/slapd.conf;
+                       echo -e "\ndatabase        mdb" >> /etc/ldap/slapd.conf;
+                       echo "maxsize         1073741824" >> /etc/ldap/slapd.conf;
+                       echo "suffix          \"o=ibm.com\" " >> /etc/ldap/slapd.conf;
+                       echo "rootdn          \"cn=Admin,o=ibm.com\"" >> /etc/ldap/slapd.conf;
+                       echo "rootpw          Llite123#" >> /etc/ldap/slapd.conf;
+                       echo -e "\ndirectory       \"/var/lib/ldap\"" >> /etc/ldap/slapd.conf;
+                       echo -e "\nindex           cn,mail eq" >> /etc/ldap/slapd.conf;
+                       echo "index           objectClass eq" >> /etc/ldap/slapd.conf;
+                       echo -e "\noverlay         ppolicy" >> /etc/ldap/slapd.conf;
+                       echo "ppolicy_default "cn=passwordDefault,ou=Policies,o=ibm.com"" >> /etc/ldap/slapd.conf;
                        echo -e "\nTLSCACertificateFile     /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/slapd.conf;
                        apt-get -y install curl;
                        echo "BASE                o=ibm.com" > /etc/ldap/ldap.conf;
                        echo "TLS_CACERT          /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/ldap.conf;
-                       echo "TLS_REQCERT     never" >> /etc/ldap/ldap.conf;
+                       echo "TLS_REQCERT         never" >> /etc/ldap/ldap.conf;
+                       echo "dn: o=ibm.com" > /etc/ldap/admin.ldif;
+                       echo "objectclass: dcObject" >> /etc/ldap/admin.ldif;
+                       echo "objectclass: organization" >> /etc/ldap/admin.ldif;
+                       echo "o: Liberty Lite" >> /etc/ldap/admin.ldif;
+                       echo "dc: llite" >> /etc/ldap/admin.ldif;
+                       echo -e "\ndn: cn=Admin,o=ibm.com" >> /etc/ldap/admin.ldif;
+                       echo "objectclass: organizationalRole" >> /etc/ldap/admin.ldif;
+                       echo "cn: Administrator" >> /etc/ldap/admin.ldif;
+                       echo "dn: cn=TestUser,o=ibm.com" > /etc/ldap/testuser.ldif;
+                       echo "objectClass: top" >> /etc/ldap/testuser.ldif;
+                       echo "objectClass: person" >> /etc/ldap/testuser.ldif;
+                       echo "objectClass: inetOrgPerson" >> /etc/ldap/testuser.ldif;
+                       echo "cn: Test" >> /etc/ldap/testuser.ldif;
+                       echo "sn: User" >> /etc/ldap/testuser.ldif;
+                       echo "userid: test@user.com" >> /etc/ldap/testuser.ldif;
+                       echo "mail: test@user.com" >> /etc/ldap/testuser.ldif;
+                       echo "dn: ou=Policies,o=ibm.com" > /etc/ldap/passwordpolicy.ldif;
+                       echo "ou: Policies" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "objectClass: organizationalUnit" >> /etc/ldap/passwordpolicy.ldif;
+                       echo -e "\n" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "dn: cn=passwordDefault,ou=Policies,o=ibm.com" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "objectClass: pwdPolicy" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "objectClass: person" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "objectClass: top" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "cn: passwordDefault" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "sn: passwordDefault" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdAttribute: userPassword" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdCheckQuality: 0" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdMinAge: 0" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdMaxAge: 0" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdMinLength: 6" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdInHistory: 7" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdMaxFailure: 3" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdFailureCountInterval: 0" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdLockout: TRUE" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdLockoutDuration: 0" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "pwdAllowUserChange: TRUE" >> /etc/ldap/passwordpolicy.ldif;
+                       echo "dn: cn=Raktim,o=ibm.com" > /etc/ldap/unlock.ldif;
+                       echo "changetype: modify" >> /etc/ldap/unlock.ldif;
+                       echo "delete: pwdAccountLockedTime" >> /etc/ldap/unlock.ldif;
                        echo "rm -rf /etc/ldap/slapd.d/cn=*" > /etc/ldap/run.sh;
                        echo "slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/" >> /etc/ldap/run.sh;
                        echo "chown -R openldap:openldap /etc/ldap/slapd.d" >> /etc/ldap/run.sh;
@@ -75,9 +135,9 @@ spec:
             httpGet:
               path: /
               port: http
-          volumeMounts:
-            - mountPath: /var/lib/ldap
-              name: openldap-varlibldap
+          # volumeMounts:
+          #   - mountPath: /var/lib/ldap
+          #     name: openldap-varlibldap
           #   - mountPath: /etc
           #     name: openldap-etc
           #   - mountPath: /usr
@@ -86,10 +146,10 @@ spec:
           #     name: openldap-run          
           resources:  
 {{ toYaml .Values.resources | indent 12 }}   
-      volumes:
-      - name: openldap-varlibldap
-        persistentVolumeClaim:
-          claimName: openldap-pvc-varlibldap 
+      # volumes:
+      # - name: openldap-varlibldap
+      #   persistentVolumeClaim:
+      #     claimName: openldap-pvc-varlibldap 
       # - name: openldap-etc
       #   persistentVolumeClaim:
       #     claimName: openldap-pvc-etc
